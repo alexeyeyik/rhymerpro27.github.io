@@ -2,99 +2,136 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Мой Рифмогенератор</title>
+    <title>Рифмогенератор Про</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: #eef2f3; }
-        .notebook { width: 60%; padding: 20px; display: flex; flex-direction: column; }
-        #paper { flex: 1; padding: 20px; font-size: 18px; border: none; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); resize: none; outline: none; line-height: 1.6; }
-        .sidebar { width: 40%; padding: 20px; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
-        .search-area { border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px; }
-        input { width: 70%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
-        button { padding: 12px 20px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
-        button:hover { background: #357abd; }
-        #results { flex: 1; overflow-y: auto; font-size: 18px; color: #333; }
-        .rhyme { padding: 8px; border-bottom: 1px solid #eee; }
-        .best { color: #27ae60; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; margin: 0; background: #f0f2f5; color: #333; }
+        .notepad { width: 60%; padding: 25px; display: flex; flex-direction: column; background: #fff; }
+        #textEditor { flex: 1; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 12px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); resize: none; outline: none; line-height: 1.6; }
+        
+        .sidebar { width: 40%; padding: 25px; background: #f8f9fa; border-left: 1px solid #e0e0e0; display: flex; flex-direction: column; }
+        .search-box { margin-bottom: 20px; }
+        h2 { margin-top: 0; color: #2c3e50; }
+        .status { font-size: 13px; color: #666; margin-bottom: 15px; padding: 8px; background: #e9ecef; border-radius: 5px; }
+        
+        input { width: 60%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: border 0.3s; }
+        input:focus { border-color: #2ecc71; }
+        button { padding: 12px 20px; background: #2ecc71; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        button:hover { background: #27ae60; }
+        
+        #results { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 10px; }
+        .word-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 18px; display: flex; justify-content: space-between; }
+        .word-item:hover { background: #fff; border-radius: 5px; }
+        .score-tag { font-size: 12px; color: #aaa; background: #eee; padding: 2px 6px; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-<div class="notebook">
-    <h2 style="color: #555;">Блокнот для стихов</h2>
-    <textarea id="paper" placeholder="Начни писать свою поэму здесь..."></textarea>
+<div class="notepad">
+    <h2>Твой блокнот</h2>
+    <textarea id="textEditor" placeholder="Пиши стихи здесь..."></textarea>
 </div>
 
 <div class="sidebar">
-    <div class="search-area">
-        <h2>Поиск рифм</h2>
-        <input type="text" id="wordInput" placeholder="водА (с ударением)">
-        <button onclick="findRhymes()">Найти</button>
+    <h2>Поиск рифм</h2>
+    <div id="loadStatus" class="status">Загрузка...</div>
+    <div class="search-box">
+        <input type="text" id="targetWord" placeholder="Напр: молокО">
+        <button onclick="search()">Найти</button>
     </div>
-    <div id="results">Здесь появятся рифмы...</div>
+    <div id="results">Введите слово с большой буквой на месте ударения.</div>
 </div>
 
 <script>
-    let dictionary = [];
+    let words = [];
+    const VOWELS = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
 
-    // Загрузка словаря из файла dictionary.txt
-    async function loadWords() {
+    async function initDictionary() {
         try {
-            const resp = await fetch('dictionary.txt');
-            const data = await resp.text();
-            dictionary = data.split('\n').map(line => {
-                let word = line.trim().toLowerCase();
-                let p = word.indexOf('+');
+            const response = await fetch('dictionary.txt');
+            const text = await response.text();
+            
+            words = text.split('\n').map(line => {
+                let w = line.trim();
+                let p = w.indexOf('+');
                 if (p !== -1) {
-                    return word.slice(0, p-1) + word[p-1].toUpperCase() + word.slice(p+1);
+                    // Убираем плюс и делаем ГЛАСНУЮ рядом с ним заглавной
+                    let clean = w.replace('+', '');
+                    let pos = p - 1; // Обычно плюс идет после гласной
+                    // Если перед плюсом не гласная, попробуем букву после плюса
+                    if (!VOWELS.includes(clean[pos])) pos = p; 
+                    
+                    return clean.slice(0, pos) + clean[pos].toUpperCase() + clean.slice(pos + 1);
                 }
-                return word;
-            }).filter(w => w.length > 0);
-            console.log("Словарь загружен!");
-        } catch (e) {
-            document.getElementById('results').innerHTML = "Ошибка загрузки словаря. Убедись, что файл dictionary.txt лежит рядом с этим файлом.";
+                return w;
+            }).filter(w => w.length > 1);
+
+            document.getElementById('loadStatus').innerText = "✅ Словарь готов! Слов: " + words.length;
+        } catch (err) {
+            document.getElementById('loadStatus').innerHTML = "<b style='color:red'>❌ Файл dictionary.txt не найден!</b>";
         }
     }
 
-    function findRhymes() {
-        const query = document.getElementById('wordInput').value.trim();
-        const resDiv = document.getElementById('results');
-        resDiv.innerHTML = '';
+    function search() {
+        const input = document.getElementById('targetWord').value.trim();
+        const resBox = document.getElementById('results');
+        resBox.innerHTML = '';
 
-        const stressIdx = [...query].findIndex(c => c === c.toUpperCase() && c !== c.toLowerCase());
+        // Находим позицию ударения (заглавной буквы)
+        let stressIdx = -1;
+        for(let i=0; i<input.length; i++) {
+            if (input[i] === input[i].toUpperCase() && input[i] !== input[i].toLowerCase()) {
+                stressIdx = i; break;
+            }
+        }
+        
         if (stressIdx === -1) {
-            resDiv.innerHTML = '<b style="color:red">Выдели УДАРНУЮ гласную большой буквой!</b>';
+            resBox.innerHTML = "<p style='color:#e67e22'>Укажите ударение БОЛЬШОЙ гласной (молокО, водА)</p>";
             return;
         }
 
-        const tail = query.substring(stressIdx).toLowerCase();
+        const queryTail = input.substring(stressIdx).toLowerCase();
 
-        const matches = dictionary
-            .map(word => {
-                const wStressIdx = [...word].findIndex(c => c === c.toUpperCase() && c !== c.toLowerCase());
-                if (wStressIdx === -1) return null;
-                const wTail = word.substring(wStressIdx).toLowerCase();
-                let score = 0;
-                for (let i = 1; i <= Math.min(tail.length, wTail.length); i++) {
-                    if (tail.slice(-i) === wTail.slice(-i)) score++; else break;
+        const found = words
+            .filter(w => w.toLowerCase() !== input.toLowerCase())
+            .map(w => {
+                let wStressIdx = -1;
+                for(let i=0; i<w.length; i++) {
+                    if (w[i] === w[i].toUpperCase() && w[i] !== w[i].toLowerCase()) {
+                        wStressIdx = i; break;
+                    }
                 }
-                return { word, score };
+                if (wStressIdx === -1) return null;
+                
+                const wTail = w.substring(wStressIdx).toLowerCase();
+                let score = 0;
+                
+                // Проверяем совпадение хвостов
+                for (let i = 1; i <= Math.min(queryTail.length, wTail.length); i++) {
+                    if (queryTail.slice(-i) === wTail.slice(-i)) score++;
+                    else break;
+                }
+
+                // Условие: должны совпадать хотя бы ударные гласные
+                if (queryTail[0] !== wTail[0]) score = 0; 
+
+                return { word: w, score: score };
             })
-            .filter(m => m && m.score >= 2)
+            .filter(m => m && m.score > 0)
             .sort((a, b) => b.score - a.score);
 
-        if (matches.length === 0) resDiv.innerHTML = "Рифм не найдено.";
-        else {
-            matches.forEach(m => {
-                const d = document.createElement('div');
-                d.className = 'rhyme' + (m.score >= 3 ? ' best' : '');
-                d.textContent = m.word.toLowerCase();
-                resDiv.appendChild(d);
+        if (found.length === 0) {
+            resBox.innerHTML = "Ничего не найдено.";
+        } else {
+            found.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'word-item';
+                div.innerHTML = `<span>${item.word.toLowerCase()}</span> <span class="score-tag">размер: ${item.score}</span>`;
+                resBox.appendChild(div);
             });
         }
     }
 
-    loadWords();
+    initDictionary();
 </script>
-
 </body>
 </html>
