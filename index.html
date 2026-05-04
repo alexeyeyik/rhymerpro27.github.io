@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Мой Рифмогенератор</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; margin: 0; background: #eef2f3; }
+        .notebook { width: 60%; padding: 20px; display: flex; flex-direction: column; }
+        #paper { flex: 1; padding: 20px; font-size: 18px; border: none; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); resize: none; outline: none; line-height: 1.6; }
+        .sidebar { width: 40%; padding: 20px; background: white; box-shadow: -2px 0 10px rgba(0,0,0,0.05); display: flex; flex-direction: column; }
+        .search-area { border-bottom: 2px solid #f0f0f0; padding-bottom: 20px; margin-bottom: 20px; }
+        input { width: 70%; padding: 12px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; }
+        button { padding: 12px 20px; background: #4a90e2; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #357abd; }
+        #results { flex: 1; overflow-y: auto; font-size: 18px; color: #333; }
+        .rhyme { padding: 8px; border-bottom: 1px solid #eee; }
+        .best { color: #27ae60; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="notebook">
+    <h2 style="color: #555;">Блокнот для стихов</h2>
+    <textarea id="paper" placeholder="Начни писать свою поэму здесь..."></textarea>
+</div>
+
+<div class="sidebar">
+    <div class="search-area">
+        <h2>Поиск рифм</h2>
+        <input type="text" id="wordInput" placeholder="водА (с ударением)">
+        <button onclick="findRhymes()">Найти</button>
+    </div>
+    <div id="results">Здесь появятся рифмы...</div>
+</div>
+
+<script>
+    let dictionary = [];
+
+    // Загрузка словаря из файла dictionary.txt
+    async function loadWords() {
+        try {
+            const resp = await fetch('dictionary.txt');
+            const data = await resp.text();
+            dictionary = data.split('\n').map(line => {
+                let word = line.trim().toLowerCase();
+                let p = word.indexOf('+');
+                if (p !== -1) {
+                    return word.slice(0, p-1) + word[p-1].toUpperCase() + word.slice(p+1);
+                }
+                return word;
+            }).filter(w => w.length > 0);
+            console.log("Словарь загружен!");
+        } catch (e) {
+            document.getElementById('results').innerHTML = "Ошибка загрузки словаря. Убедись, что файл dictionary.txt лежит рядом с этим файлом.";
+        }
+    }
+
+    function findRhymes() {
+        const query = document.getElementById('wordInput').value.trim();
+        const resDiv = document.getElementById('results');
+        resDiv.innerHTML = '';
+
+        const stressIdx = [...query].findIndex(c => c === c.toUpperCase() && c !== c.toLowerCase());
+        if (stressIdx === -1) {
+            resDiv.innerHTML = '<b style="color:red">Выдели УДАРНУЮ гласную большой буквой!</b>';
+            return;
+        }
+
+        const tail = query.substring(stressIdx).toLowerCase();
+
+        const matches = dictionary
+            .map(word => {
+                const wStressIdx = [...word].findIndex(c => c === c.toUpperCase() && c !== c.toLowerCase());
+                if (wStressIdx === -1) return null;
+                const wTail = word.substring(wStressIdx).toLowerCase();
+                let score = 0;
+                for (let i = 1; i <= Math.min(tail.length, wTail.length); i++) {
+                    if (tail.slice(-i) === wTail.slice(-i)) score++; else break;
+                }
+                return { word, score };
+            })
+            .filter(m => m && m.score >= 2)
+            .sort((a, b) => b.score - a.score);
+
+        if (matches.length === 0) resDiv.innerHTML = "Рифм не найдено.";
+        else {
+            matches.forEach(m => {
+                const d = document.createElement('div');
+                d.className = 'rhyme' + (m.score >= 3 ? ' best' : '');
+                d.textContent = m.word.toLowerCase();
+                resDiv.appendChild(d);
+            });
+        }
+    }
+
+    loadWords();
+</script>
+
+</body>
+</html>
