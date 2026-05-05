@@ -2,136 +2,280 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Рифмогенератор Про</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Рифмогенератор Pro</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; margin: 0; background: #f0f2f5; color: #333; }
-        .notepad { width: 60%; padding: 25px; display: flex; flex-direction: column; background: #fff; }
-        #textEditor { flex: 1; padding: 20px; font-size: 18px; border: 1px solid #ddd; border-radius: 12px; box-shadow: inset 0 2px 10px rgba(0,0,0,0.05); resize: none; outline: none; line-height: 1.6; }
+        /* Переменные для тем */
+        :root {
+            --bg-main: #f0f2f5;
+            --bg-card: #ffffff;
+            --bg-input: #ffffff;
+            --text-main: #333333;
+            --text-dim: #666666;
+            --accent: #2ecc71;
+            --accent-hover: #27ae60;
+            --border: #dddddd;
+            --shadow: rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            --bg-main: #121212;
+            --bg-card: #1e1e1e;
+            --bg-input: #2a2a2a;
+            --text-main: #e0e0e0;
+            --text-dim: #b0b0b0;
+            --accent: #2ecc71;
+            --accent-hover: #27ae60;
+            --border: #333333;
+            --shadow: rgba(0,0,0,0.5);
+        }
+
+        body { 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            display: flex; 
+            height: 100vh; 
+            margin: 0; 
+            background: var(--bg-main); 
+            color: var(--text-main); 
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* Боковая панель управления (Слева) */
+        .control-panel {
+            width: 60px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 20px;
+        }
+
+        .icon-btn {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: 0.3s;
+        }
+        .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+        /* Контент инструкции (Выезжающий) */
+        #infoContent {
+            display: none;
+            width: 250px;
+            padding: 20px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--border);
+            font-size: 14px;
+            overflow-y: auto;
+        }
+        #infoContent.active { display: block; }
+
+        /* Блокнот (Центр) */
+        .notepad { 
+            flex: 1; 
+            padding: 25px; 
+            display: flex; 
+            flex-direction: column; 
+        }
+        #textEditor { 
+            flex: 1; 
+            padding: 20px; 
+            font-size: 18px; 
+            background: var(--bg-card);
+            color: var(--text-main);
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            resize: none; 
+            outline: none; 
+            line-height: 1.6; 
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        /* Поиск (Справа) */
+        .sidebar { 
+            width: 350px; 
+            padding: 25px; 
+            background: var(--bg-card); 
+            border-left: 1px solid var(--border); 
+            display: flex; 
+            flex-direction: column; 
+        }
         
-        .sidebar { width: 40%; padding: 25px; background: #f8f9fa; border-left: 1px solid #e0e0e0; display: flex; flex-direction: column; }
-        .search-box { margin-bottom: 20px; }
-        h2 { margin-top: 0; color: #2c3e50; }
-        .status { font-size: 13px; color: #666; margin-bottom: 15px; padding: 8px; background: #e9ecef; border-radius: 5px; }
+        .search-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+        input { 
+            padding: 12px; 
+            background: var(--bg-input);
+            color: var(--text-main);
+            border: 2px solid var(--border); 
+            border-radius: 8px; 
+            font-size: 16px; 
+            outline: none; 
+        }
+        input:focus { border-color: var(--accent); }
         
-        input { width: 60%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; transition: border 0.3s; }
-        input:focus { border-color: #2ecc71; }
-        button { padding: 12px 20px; background: #2ecc71; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 16px; }
-        button:hover { background: #27ae60; }
-        
-        #results { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 10px; }
-        .word-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 18px; display: flex; justify-content: space-between; }
-        .word-item:hover { background: #fff; border-radius: 5px; }
-        .score-tag { font-size: 12px; color: #aaa; background: #eee; padding: 2px 6px; border-radius: 10px; }
+        .main-btn { 
+            padding: 12px; 
+            background: var(--accent); 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+        }
+
+        #results { flex: 1; overflow-y: auto; }
+        .word-item { 
+            padding: 10px; 
+            border-bottom: 1px solid var(--border); 
+            display: flex; 
+            justify-content: space-between; 
+        }
+        .score-tag { color: var(--accent); font-size: 12px; }
+
+        /* Мобилки */
+        @media (max-width: 900px) {
+            body { flex-direction: column; height: auto; }
+            .control-panel { width: 100%; flex-direction: row; justify-content: center; height: 60px; padding: 0; }
+            #infoContent { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+            .sidebar { width: 100%; height: 500px; border-left: none; border-top: 1px solid var(--border); }
+            .notepad { height: 400px; }
+        }
     </style>
 </head>
-<body>
+<body data-theme="light">
 
-<div class="notepad">
-    <h2>Твой блокнот</h2>
-    <textarea id="textEditor" placeholder="Пиши стихи здесь..."></textarea>
+<!-- Панель управления -->
+<div class="control-panel">
+    <button class="icon-btn" onclick="toggleTheme()" title="Сменить тему">🌓</button>
+    <button class="icon-btn" onclick="toggleInfo()" title="Как пользоваться">❓</button>
 </div>
 
+<!-- Выезжающая инструкция -->
+<div id="infoContent">
+    <h3 style="color:var(--accent)">Инструкция</h3>
+    <p>1. Вводи слово в поле справа.</p>
+    <p>2. <b>Важно:</b> пиши ударную гласную БОЛЬШОЙ буквой (например, <i>водА</i>).</p>
+    <p>3. Нажми Enter или кнопку поиска.</p>
+    <p>4. В центре — твой личный блокнот для стихов.</p>
+</div>
+
+<!-- Блокнот -->
+<div class="notepad">
+    <h2 style="margin-top:0">Черновик</h2>
+    <textarea id="textEditor" placeholder="Пиши свои строки здесь..."></textarea>
+</div>
+
+<!-- Поиск рифм -->
 <div class="sidebar">
-    <h2>Поиск рифм</h2>
-    <div id="loadStatus" class="status">Загрузка...</div>
+    <h3>Рифмы</h3>
+    <div id="loadStatus" style="font-size:12px; margin-bottom:10px; color:var(--text-dim)">Загрузка...</div>
     <div class="search-box">
         <input type="text" id="targetWord" placeholder="Напр: молокО">
-        <button onclick="search()">Найти</button>
+        <button class="main-btn" onclick="search()">Найти</button>
     </div>
-    <div id="results">Введите слово с большой буквой на месте ударения.</div>
+    <div id="results">Результаты появятся здесь.</div>
 </div>
 
 <script>
     let words = [];
     const VOWELS = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
 
-    async function initDictionary() {
+    // Переключение темы
+    function toggleTheme() {
+        const body = document.body;
+        const current = body.getAttribute('data-theme');
+        const next = current === 'light' ? 'dark' : 'light';
+        body.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+    }
+
+    // Переключение инструкции
+    function toggleInfo() {
+        document.getElementById('infoContent').classList.toggle('active');
+    }
+
+    // Загрузка темы из памяти
+    if(localStorage.getItem('theme')) {
+        document.body.setAttribute('data-theme', localStorage.getItem('theme'));
+    }
+
+    // Логика словаря
+    async function init() {
         try {
-            const response = await fetch('dictionary.txt');
-            const text = await response.text();
-            
+            const res = await fetch('dictionary.txt');
+            const text = await res.text();
             words = text.split('\n').map(line => {
                 let w = line.trim();
                 let p = w.indexOf('+');
                 if (p !== -1) {
-                    // Убираем плюс и делаем ГЛАСНУЮ рядом с ним заглавной
-                    let clean = w.replace('+', '');
-                    let pos = p - 1; // Обычно плюс идет после гласной
-                    // Если перед плюсом не гласная, попробуем букву после плюса
-                    if (!VOWELS.includes(clean[pos])) pos = p; 
-                    
-                    return clean.slice(0, pos) + clean[pos].toUpperCase() + clean.slice(pos + 1);
+                    let c = w.replace('+', '');
+                    let pos = p - 1;
+                    if (!VOWELS.includes(c[pos])) pos = p;
+                    return c.slice(0, pos) + c[pos].toUpperCase() + c.slice(pos + 1);
                 }
                 return w;
             }).filter(w => w.length > 1);
-
-            document.getElementById('loadStatus').innerText = "✅ Словарь готов! Слов: " + words.length;
-        } catch (err) {
-            document.getElementById('loadStatus').innerHTML = "<b style='color:red'>❌ Файл dictionary.txt не найден!</b>";
+            document.getElementById('loadStatus').innerText = "✅ Словарь готов (" + words.length + ")";
+        } catch (e) {
+            document.getElementById('loadStatus').innerText = "❌ Ошибка загрузки";
         }
     }
 
     function search() {
-        const input = document.getElementById('targetWord').value.trim();
+        const val = document.getElementById('targetWord').value.trim();
         const resBox = document.getElementById('results');
-        resBox.innerHTML = '';
-
-        // Находим позицию ударения (заглавной буквы)
         let stressIdx = -1;
-        for(let i=0; i<input.length; i++) {
-            if (input[i] === input[i].toUpperCase() && input[i] !== input[i].toLowerCase()) {
+        for(let i=0; i<val.length; i++) {
+            if (val[i] === val[i].toUpperCase() && val[i] !== val[i].toLowerCase()) {
                 stressIdx = i; break;
             }
         }
-        
         if (stressIdx === -1) {
-            resBox.innerHTML = "<p style='color:#e67e22'>Укажите ударение БОЛЬШОЙ гласной (молокО, водА)</p>";
+            resBox.innerHTML = "<small style='color:orange'>Выдели ударение БОЛЬШОЙ буквой</small>";
             return;
         }
 
-        const queryTail = input.substring(stressIdx).toLowerCase();
-
-        const found = words
-            .filter(w => w.toLowerCase() !== input.toLowerCase())
-            .map(w => {
-                let wStressIdx = -1;
-                for(let i=0; i<w.length; i++) {
-                    if (w[i] === w[i].toUpperCase() && w[i] !== w[i].toLowerCase()) {
-                        wStressIdx = i; break;
-                    }
+        const tail = val.substring(stressIdx).toLowerCase();
+        const found = words.map(w => {
+            let wStressIdx = -1;
+            for(let i=0; i<w.length; i++) {
+                if (w[i] === w[i].toUpperCase() && w[i] !== w[i].toLowerCase()) {
+                    wStressIdx = i; break;
                 }
-                if (wStressIdx === -1) return null;
-                
-                const wTail = w.substring(wStressIdx).toLowerCase();
-                let score = 0;
-                
-                // Проверяем совпадение хвостов
-                for (let i = 1; i <= Math.min(queryTail.length, wTail.length); i++) {
-                    if (queryTail.slice(-i) === wTail.slice(-i)) score++;
-                    else break;
-                }
+            }
+            if (wStressIdx === -1) return null;
+            const wTail = w.substring(wStressIdx).toLowerCase();
+            if (wTail !== tail) return null;
 
-                // Условие: должны совпадать хотя бы ударные гласные
-                if (queryTail[0] !== wTail[0]) score = 0; 
+            // Считаем вес рифмы
+            let score = 0;
+            const v1 = val.toLowerCase();
+            const v2 = w.toLowerCase();
+            for (let i = 1; i <= Math.min(v1.length, v2.length); i++) {
+                if (v1[v1.length-i] === v2[v2.length-i]) score++;
+                else break;
+            }
+            return { w, score };
+        }).filter(x => x).sort((a,b) => b.score - a.score);
 
-                return { word: w, score: score };
-            })
-            .filter(m => m && m.score > 0)
-            .sort((a, b) => b.score - a.score);
-
-        if (found.length === 0) {
-            resBox.innerHTML = "Ничего не найдено.";
-        } else {
-            found.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'word-item';
-                div.innerHTML = `<span>${item.word.toLowerCase()}</span> <span class="score-tag">размер: ${item.score}</span>`;
-                resBox.appendChild(div);
-            });
-        }
+        resBox.innerHTML = '';
+        found.slice(0, 100).forEach(item => {
+            resBox.innerHTML += `<div class="word-item"><span>${item.w.toLowerCase()}</span><span class="score-tag">вес ${item.score}</span></div>`;
+        });
     }
 
-    initDictionary();
+    document.getElementById('targetWord').addEventListener('keypress', (e) => { if(e.key === 'Enter') search() });
+    init();
 </script>
 </body>
 </html>
