@@ -5,248 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Рифмогенератор Pro</title>
     <style>
-        /* Переменные для тем */
         :root {
+            --bg-main: #1e1e1e;
+            --bg-card: #252525;
+            --text-main: #e0e0e0;
+            --accent: #2ecc71;
+            --border: #333;
+        }
+        [data-theme="light"] {
             --bg-main: #f0f2f5;
             --bg-card: #ffffff;
-            --bg-input: #ffffff;
-            --text-main: #333333;
-            --text-dim: #666666;
-            --accent: #2ecc71;
-            --accent-hover: #27ae60;
-            --border: #dddddd;
-            --shadow: rgba(0,0,0,0.1);
+            --text-main: #333;
+            --border: #ddd;
         }
-
-        [data-theme="dark"] {
-            --bg-main: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #2a2a2a;
-            --text-main: #e0e0e0;
-            --text-dim: #b0b0b0;
-            --accent: #2ecc71;
-            --accent-hover: #27ae60;
-            --border: #333333;
-            --shadow: rgba(0,0,0,0.5);
-        }
-
-        body { 
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-            display: flex; 
-            height: 100vh; 
-            margin: 0; 
-            background: var(--bg-main); 
-            color: var(--text-main); 
-            transition: background 0.3s, color 0.3s;
-        }
-
-        /* Боковая панель управления (Слева) */
-        .control-panel {
-            width: 60px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 20px 0;
-            gap: 20px;
-        }
-
-        .icon-btn {
-            background: var(--bg-input);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 20px;
-            transition: 0.3s;
-        }
-        .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
-
-        /* Контент инструкции (Выезжающий) */
-        #infoContent {
-            display: none;
-            width: 250px;
-            padding: 20px;
-            background: var(--bg-card);
-            border-right: 1px solid var(--border);
-            font-size: 14px;
-            overflow-y: auto;
-        }
-        #infoContent.active { display: block; }
-
-        /* Блокнот (Центр) */
-        .notepad { 
-            flex: 1; 
-            padding: 25px; 
-            display: flex; 
-            flex-direction: column; 
-        }
-        #textEditor { 
-            flex: 1; 
-            padding: 20px; 
-            font-size: 18px; 
-            background: var(--bg-card);
-            color: var(--text-main);
-            border: 1px solid var(--border); 
-            border-radius: 12px; 
-            resize: none; 
-            outline: none; 
-            line-height: 1.6; 
-            box-shadow: 0 4px 15px var(--shadow);
-        }
-
-        /* Поиск (Справа) */
-        .sidebar { 
-            width: 350px; 
-            padding: 25px; 
-            background: var(--bg-card); 
-            border-left: 1px solid var(--border); 
-            display: flex; 
-            flex-direction: column; 
-        }
+        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg-main); color: var(--text-main); transition: 0.3s; }
+        .control-panel { width: 60px; background: var(--bg-card); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 20px 0; gap: 15px; }
+        .btn-icon { background: none; border: 1px solid var(--border); color: var(--text-main); cursor: pointer; padding: 10px; border-radius: 8px; }
+        #info { display: none; width: 250px; padding: 20px; background: var(--bg-card); border-right: 1px solid var(--border); font-size: 14px; }
+        #info.active { display: block; }
+        .notepad { flex: 1; padding: 20px; display: flex; flex-direction: column; }
+        textarea { flex: 1; background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; padding: 15px; font-size: 18px; resize: none; outline: none; }
+        .sidebar { width: 300px; padding: 20px; background: var(--bg-card); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        input { padding: 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-main); color: var(--text-main); margin-bottom: 10px; }
+        .search-btn { padding: 10px; background: var(--accent); border: none; color: white; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #results { flex: 1; overflow-y: auto; margin-top: 15px; font-size: 16px; }
+        .word-item { padding: 8px 0; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+        .score { color: var(--accent); font-size: 12px; }
         
-        .search-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
-        input { 
-            padding: 12px; 
-            background: var(--bg-input);
-            color: var(--text-main);
-            border: 2px solid var(--border); 
-            border-radius: 8px; 
-            font-size: 16px; 
-            outline: none; 
-        }
-        input:focus { border-color: var(--accent); }
-        
-        .main-btn { 
-            padding: 12px; 
-            background: var(--accent); 
-            color: white; 
-            border: none; 
-            border-radius: 8px; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
-
-        #results { flex: 1; overflow-y: auto; }
-        .word-item { 
-            padding: 10px; 
-            border-bottom: 1px solid var(--border); 
-            display: flex; 
-            justify-content: space-between; 
-        }
-        .score-tag { color: var(--accent); font-size: 12px; }
-
-        /* Мобилки */
-        @media (max-width: 900px) {
+        @media (max-width: 800px) {
             body { flex-direction: column; height: auto; }
-            .control-panel { width: 100%; flex-direction: row; justify-content: center; height: 60px; padding: 0; }
-            #infoContent { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
-            .sidebar { width: 100%; height: 500px; border-left: none; border-top: 1px solid var(--border); }
-            .notepad { height: 400px; }
+            .control-panel { width: 100%; flex-direction: row; height: 60px; padding: 0; justify-content: center; }
+            .sidebar, #info { width: 100%; box-sizing: border-box; }
         }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="dark">
 
-<!-- Панель управления -->
 <div class="control-panel">
-    <button class="icon-btn" onclick="toggleTheme()" title="Сменить тему">🌓</button>
-    <button class="icon-btn" onclick="toggleInfo()" title="Как пользоваться">❓</button>
+    <button class="btn-icon" onclick="toggleTheme()">🌓</button>
+    <button class="btn-icon" onclick="toggleInfo()">❓</button>
 </div>
 
-<!-- Выезжающая инструкция -->
-<div id="infoContent">
-    <h3 style="color:var(--accent)">Инструкция</h3>
-    <p>1. Вводи слово в поле справа.</p>
-    <p>2. <b>Важно:</b> пиши ударную гласную БОЛЬШОЙ буквой (например, <i>водА</i>).</p>
-    <p>3. Нажми Enter или кнопку поиска.</p>
-    <p>4. В центре — твой личный блокнот для стихов.</p>
+<div id="info">
+    <h3>Как пользоваться</h3>
+    <p>Пиши слово с <b>ЗАГЛАВНОЙ</b> гласной там, где ударение.</p>
+    <p>Пример: <i>стенА</i> или <i>мОре</i>.</p>
 </div>
 
-<!-- Блокнот -->
 <div class="notepad">
-    <h2 style="margin-top:0">Черновик</h2>
-    <textarea id="textEditor" placeholder="Пиши свои строки здесь..."></textarea>
+    <h2>Блокнот для стихов</h2>
+    <textarea placeholder="Начни писать свою поэму здесь..."></textarea>
 </div>
 
-<!-- Поиск рифм -->
 <div class="sidebar">
-    <h3>Рифмы</h3>
-    <div id="loadStatus" style="font-size:12px; margin-bottom:10px; color:var(--text-dim)">Загрузка...</div>
-    <div class="search-box">
-        <input type="text" id="targetWord" placeholder="Напр: молокО">
-        <button class="main-btn" onclick="search()">Найти</button>
-    </div>
-    <div id="results">Результаты появятся здесь.</div>
+    <h3>Поиск рифм</h3>
+    <div id="status" style="font-size: 12px; color: gray; margin-bottom: 5px;">Загрузка словаря...</div>
+    <input type="text" id="wordInput" placeholder="водА" onkeypress="if(event.key==='Enter') find()">
+    <button class="search-btn" onclick="find()">Найти</button>
+    <div id="results"></div>
 </div>
 
 <script>
-    let words = [];
+    let dictionary = [];
     const VOWELS = "аеёиоуыэюяАЕЁИОУЫЭЮЯ";
 
-    // Переключение темы
-    function toggleTheme() {
-        const body = document.body;
-        const current = body.getAttribute('data-theme');
-        const next = current === 'light' ? 'dark' : 'light';
-        body.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-    }
-
-    // Переключение инструкции
-    function toggleInfo() {
-        document.getElementById('infoContent').classList.toggle('active');
-    }
-
-    // Загрузка темы из памяти
-    if(localStorage.getItem('theme')) {
-        document.body.setAttribute('data-theme', localStorage.getItem('theme'));
-    }
-
-    // Логика словаря
-    async function init() {
+    async function load() {
+        const status = document.getElementById('status');
         try {
-            const res = await fetch('dictionary.txt');
+            // Исправленный путь для GitHub Pages
+            const res = await fetch('./dictionary.txt');
+            if (!res.ok) throw new Error('Файл не найден');
             const text = await res.text();
-            words = text.split('\n').map(line => {
+            dictionary = text.split('\n').map(line => {
                 let w = line.trim();
                 let p = w.indexOf('+');
                 if (p !== -1) {
-                    let c = w.replace('+', '');
+                    let clean = w.replace('+', '');
                     let pos = p - 1;
-                    if (!VOWELS.includes(c[pos])) pos = p;
-                    return c.slice(0, pos) + c[pos].toUpperCase() + c.slice(pos + 1);
+                    if (!VOWELS.includes(clean[pos])) pos = p;
+                    return clean.slice(0, pos) + clean[pos].toUpperCase() + clean.slice(pos + 1);
                 }
                 return w;
             }).filter(w => w.length > 1);
-            document.getElementById('loadStatus').innerText = "✅ Словарь готов (" + words.length + ")";
+            status.innerText = "✅ Готово: " + dictionary.length + " слов";
         } catch (e) {
-            document.getElementById('loadStatus').innerText = "❌ Ошибка загрузки";
+            status.innerText = "❌ Ошибка: проверь dictionary.txt";
+            console.error(e);
         }
     }
 
-    function search() {
-        const val = document.getElementById('targetWord').value.trim();
-        const resBox = document.getElementById('results');
+    function find() {
+        const input = document.getElementById('wordInput').value.trim();
+        const resDiv = document.getElementById('results');
+        if (!input) return;
+
         let stressIdx = -1;
-        for(let i=0; i<val.length; i++) {
-            if (val[i] === val[i].toUpperCase() && val[i] !== val[i].toLowerCase()) {
+        for(let i=0; i<input.length; i++) {
+            if (input[i] === input[i].toUpperCase() && input[i] !== input[i].toLowerCase()) {
                 stressIdx = i; break;
             }
         }
+
         if (stressIdx === -1) {
-            resBox.innerHTML = "<small style='color:orange'>Выдели ударение БОЛЬШОЙ буквой</small>";
+            resDiv.innerHTML = "<span style='color:orange'>Нужна БОЛЬШАЯ гласная!</span>";
             return;
         }
 
-        const tail = val.substring(stressIdx).toLowerCase();
-        const found = words.map(w => {
+        const tail = input.substring(stressIdx).toLowerCase();
+        const matches = dictionary.map(w => {
             let wStressIdx = -1;
             for(let i=0; i<w.length; i++) {
                 if (w[i] === w[i].toUpperCase() && w[i] !== w[i].toLowerCase()) {
@@ -254,28 +120,31 @@
                 }
             }
             if (wStressIdx === -1) return null;
-            const wTail = w.substring(wStressIdx).toLowerCase();
-            if (wTail !== tail) return null;
+            if (w.substring(wStressIdx).toLowerCase() !== tail) return null;
 
-            // Считаем вес рифмы
+            // Вес рифмы
             let score = 0;
-            const v1 = val.toLowerCase();
-            const v2 = w.toLowerCase();
-            for (let i = 1; i <= Math.min(v1.length, v2.length); i++) {
-                if (v1[v1.length-i] === v2[v2.length-i]) score++;
+            const s1 = input.toLowerCase();
+            const s2 = w.toLowerCase();
+            for(let i=1; i <= Math.min(s1.length, s2.length); i++) {
+                if (s1[s1.length-i] === s2[s2.length-i]) score++;
                 else break;
             }
             return { w, score };
         }).filter(x => x).sort((a,b) => b.score - a.score);
 
-        resBox.innerHTML = '';
-        found.slice(0, 100).forEach(item => {
-            resBox.innerHTML += `<div class="word-item"><span>${item.w.toLowerCase()}</span><span class="score-tag">вес ${item.score}</span></div>`;
-        });
+        resDiv.innerHTML = matches.length ? 
+            matches.slice(0, 50).map(m => `<div class="word-item"><span>${m.w.toLowerCase()}</span><span class="score">вес:${m.score}</span></div>`).join('') 
+            : "Рифм не найдено.";
     }
 
-    document.getElementById('targetWord').addEventListener('keypress', (e) => { if(e.key === 'Enter') search() });
-    init();
+    function toggleTheme() {
+        const b = document.body;
+        b.setAttribute('data-theme', b.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+    function toggleInfo() { document.getElementById('info').classList.toggle('active'); }
+
+    load();
 </script>
 </body>
 </html>
